@@ -1,0 +1,26 @@
+claude/
+CLAUDE.md
+README.md
+README.ru.md
+
+# working notes, not for the reviewer
+manual/MODE.md
+manual/archive/
+
+# environments and build artefacts
+manual/.venv/
+manual/dbt/target/
+manual/dbt/logs/
+manual/dbt/dbt_packages/
+manual/dbt/.user.yml
+manual/out/
+
+# databases: committed once at the end, remove the recon_dbt line then
+manual/recon_dbt.duckdb
+manual/recon_view.duckdb
+manual/recon_manual_backup.duckdb
+*.duckdb.wal
+*.tmp
+
+# os
+.DS_Store

@@ -1,0 +1,1 @@
+select * from {{ source('raw', 'payment_engine_log') }}

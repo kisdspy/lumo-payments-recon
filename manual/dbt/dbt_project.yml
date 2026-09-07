@@ -1,0 +1,30 @@
+name: recon
+version: '1.0'
+profile: recon
+model-paths: ['models']
+test-paths: ['tests']
+macro-paths: ['macros']
+seed-paths: ['seeds']
+target-path: target
+clean-targets: [target, dbt_packages]
+
+models:
+  recon:
+    +persist_docs:
+      relation: true
+      columns: true
+    raw:
+      +materialized: table
+      +schema: raw
+    analysis:
+      +materialized: table
+      +schema: analysis
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts

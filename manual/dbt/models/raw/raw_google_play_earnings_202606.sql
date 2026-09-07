@@ -1,0 +1,1 @@
+select * from {{ source('raw', 'google_play_earnings_202606') }}

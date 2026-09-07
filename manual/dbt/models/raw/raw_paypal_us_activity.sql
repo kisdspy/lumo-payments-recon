@@ -1,0 +1,1 @@
+select * from {{ source('raw', 'paypal_us_activity') }}

@@ -1,0 +1,1 @@
+select * from {{ source('raw', 'adyen_payment_accounting') }}

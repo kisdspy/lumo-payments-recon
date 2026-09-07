@@ -1,0 +1,36 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Input CSV files under raw/, read-only. Paths are relative to manual/dbt/.
+    tables:
+      - name: payment_engine_log
+        meta:
+          external_location: "read_csv('../../raw/payment_engine_log.csv', all_varchar = true)"
+      - name: adyen_payment_accounting
+        meta:
+          external_location: "read_csv('../../raw/adyen_payment_accounting_20260601_20260703.csv', all_varchar = true)"
+      - name: dlocal_transactions
+        meta:
+          external_location: "read_csv('../../raw/dlocal_transactions_20260601_20260703.csv', all_varchar = true)"
+      - name: paypal_us_activity
+        meta:
+          external_location: "read_csv('../../raw/paypal_us_activity_20260601_20260703.csv', all_varchar = true)"
+      - name: paypal_eu_activity
+        description: Semicolon-separated, cp1252 encoded, decimal comma in amounts.
+        meta:
+          external_location: "read_csv('../../raw/paypal_eu_activity_20260601_20260703.csv', all_varchar = true, delim = ';', encoding = 'cp1252')"
+      - name: google_play_earnings_202606
+        description: Line 1 is a report banner, header on line 2. Mixed LF / CRLF line endings, hence strict_mode = false.
+        meta:
+          external_location: "read_csv('../../raw/google_play_earnings_202606.csv', all_varchar = true, skip = 1, strict_mode = false)"
+      - name: google_play_earnings_202607_partial
+        description: Same layout as 202606, partial July tail for cutoff and late refunds.
+        meta:
+          external_location: "read_csv('../../raw/google_play_earnings_202607_partial.csv', all_varchar = true, skip = 1, strict_mode = false)"
+      - name: fx_rates
+        meta:
+          external_location: "read_csv('../../raw/fx_rates.csv', all_varchar = true)"
+      - name: fee_schedule
+        meta:
+          external_location: "read_csv('../../raw/fee_schedule.csv', all_varchar = true)"

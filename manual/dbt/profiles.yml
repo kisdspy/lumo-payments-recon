@@ -1,0 +1,9 @@
+recon:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../recon_dbt.duckdb
+      threads: 4
+      settings:
+        TimeZone: UTC

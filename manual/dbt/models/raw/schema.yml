@@ -1,0 +1,504 @@
+version: 2
+
+# Raw layer: one model per input CSV, all columns as text.
+# Tests encode what the 2026-09-06 profile showed (see models/analysis/FINDINGS.md).
+# unique on provider ids is severity warn here because each export carries one
+# duplicated row; the strict unique test lives in staging after dedup.
+
+models:
+  - name: raw_payment_engine_log
+    description: Payment engine log, internal source of truth across all PSPs. Raw load of raw/payment_engine_log.csv, all columns as text.
+    columns:
+      - name: txn_id
+        description: Engine transaction id.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: Business order id.
+        data_tests: [not_null]
+      - name: operation_type
+        description: Type of operation.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [SALE, REFUND, CHARGEBACK]
+      - name: status
+        description: Operation status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled, declined, pending]
+      - name: psp
+        description: Payment service provider.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [adyen, paypal_us, paypal_eu, dlocal, google_play]
+      - name: psp_reference
+        description: Transaction id on the provider side.
+        data_tests:
+          - unique
+          - not_null:
+              config:
+                where: "psp <> 'google_play'"
+      - name: sku
+        description: Product sold.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sub_monthly, sub_quarterly, sub_annual, coach_addon]
+      - name: country
+        description: Customer country.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [US, DE, FR, BR, GB, MX, NL, ES, IT, CL, CO, AR]
+      - name: currency
+        description: Charge currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, USD, BRL, GBP, MXN, CLP, COP, ARS]
+      - name: amount_local
+        description: Amount in charge currency.
+        data_tests: [not_null]
+      - name: fx_rate_applied
+        description: FX rate the engine used, USD per 1 unit of currency.
+        data_tests: [not_null]
+      - name: fx_date_applied
+        description: Date of the FX rate the engine used.
+        data_tests: [not_null]
+      - name: amount_usd
+        description: Amount in USD as computed by the engine.
+        data_tests: [not_null]
+      - name: created_at_utc
+        description: Operation creation time, UTC.
+        data_tests: [not_null]
+      - name: captured_at_utc
+        description: Capture time, UTC.
+        data_tests:
+          - not_null:
+              config:
+                where: "status = 'settled'"
+
+  - name: raw_adyen_payment_accounting
+    description: Adyen payment accounting report. Raw load of raw/adyen_payment_accounting_20260601_20260703.csv, all columns as text. One payment produces several rows with different Record Type.
+    columns:
+      - name: "Company Account"
+        quote: true
+        description: Adyen company account.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [LumoGroup]
+      - name: "Merchant Account"
+        quote: true
+        description: Adyen merchant account.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [LumoECOM_EU, LumoAPP_US]
+      - name: "Psp Reference"
+        quote: true
+        description: Adyen transaction id.
+        data_tests: [not_null]
+      - name: "Merchant Reference"
+        quote: true
+        description: Our order id passed to Adyen.
+        data_tests: [not_null]
+      - name: "Record Type"
+        quote: true
+        description: Type of accounting record.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Authorised, Settled, Refused, Refunded, Chargeback]
+      - name: "Creation Date"
+        quote: true
+        description: Record timestamp in the zone given by TimeZone.
+        data_tests: [not_null]
+      - name: "TimeZone"
+        quote: true
+        description: Time zone of Creation Date.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Europe/Amsterdam]
+      - name: "Gross Currency"
+        quote: true
+        description: Currency of gross amounts.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, USD, GBP]
+      - name: "Gross Debit"
+        quote: true
+        description: Gross debit amount.
+      - name: "Gross Credit"
+        quote: true
+        description: Gross credit amount.
+      - name: "Commission"
+        quote: true
+        description: Adyen commission.
+        data_tests:
+          - not_null:
+              config:
+                where: '"Record Type" = ''Settled'''
+      - name: "Markup"
+        quote: true
+        description: Adyen markup fee.
+        data_tests:
+          - not_null:
+              config:
+                where: '"Record Type" = ''Settled'''
+      - name: "Net Currency"
+        quote: true
+        description: Currency of net amounts.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, USD, GBP]
+      - name: "Net Debit"
+        quote: true
+        description: Net debit amount.
+      - name: "Net Credit"
+        quote: true
+        description: Net credit amount.
+      - name: "Batch Number"
+        quote: true
+        description: Adyen settlement batch number.
+        data_tests: [not_null]
+
+  - name: raw_dlocal_transactions
+    description: dLocal transactions export. Raw load of raw/dlocal_transactions_20260601_20260703.csv, all columns as text.
+    columns:
+      - name: transaction_id
+        description: dLocal transaction id.
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                severity: warn
+      - name: invoice_id
+        description: Our order id passed to dLocal.
+        data_tests: [not_null]
+      - name: transaction_type
+        description: Type of transaction.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PAYMENT, REFUND]
+      - name: status
+        description: Transaction status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PAID, REJECTED, REFUNDED, IN_MEDIATION]
+      - name: created_at_utc
+        description: Transaction time, UTC.
+        data_tests: [not_null]
+      - name: country
+        description: Customer country.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [BR, MX, CL, CO, AR]
+      - name: currency
+        description: Local currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [BRL, MXN, CLP, COP, ARS]
+      - name: currency_exponent
+        description: Number of decimal places for local_amount.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['0', '2']
+      - name: local_amount
+        description: Amount in local currency, minor units.
+        data_tests: [not_null]
+      - name: fx_rate
+        description: FX rate used by dLocal, local currency per 1 USD.
+        data_tests: [not_null]
+      - name: usd_amount
+        description: Amount in USD as computed by dLocal.
+        data_tests: [not_null]
+      - name: fee_usd
+        description: dLocal fee in USD.
+        data_tests: [not_null]
+
+  - name: raw_paypal_us_activity
+    description: PayPal US account activity. Raw load of raw/paypal_us_activity_20260601_20260703.csv, all columns as text.
+    columns:
+      - name: "Date"
+        quote: true
+        description: Transaction date.
+        data_tests: [not_null]
+      - name: "Time"
+        quote: true
+        description: Transaction time.
+        data_tests: [not_null]
+      - name: "Time Zone"
+        quote: true
+        description: Time zone of Date and Time.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [GMT]
+      - name: "Name"
+        quote: true
+        description: Customer name.
+      - name: "Transaction ID"
+        quote: true
+        description: PayPal transaction id.
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                severity: warn
+      - name: "Reference Txn ID"
+        quote: true
+        description: PayPal id of the related original transaction.
+        data_tests:
+          - not_null:
+              config:
+                where: '"Type" <> ''Website Payment'''
+      - name: "Type"
+        quote: true
+        description: PayPal transaction type.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Website Payment, Refund]
+      - name: "Status"
+        quote: true
+        description: PayPal transaction status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Completed, Denied, Refunded]
+      - name: "Currency"
+        quote: true
+        description: Transaction currency.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [USD]
+      - name: "Gross"
+        quote: true
+        description: Gross amount.
+        data_tests: [not_null]
+      - name: "Fee"
+        quote: true
+        description: PayPal fee.
+        data_tests: [not_null]
+      - name: "Net"
+        quote: true
+        description: Net amount.
+        data_tests: [not_null]
+      - name: "Invoice ID"
+        quote: true
+        description: Our order id passed to PayPal.
+        data_tests: [not_null]
+
+  - name: raw_paypal_eu_activity
+    description: PayPal EU account activity. Raw load of raw/paypal_eu_activity_20260601_20260703.csv, all columns as text. Source is semicolon-separated, cp1252, decimal comma in amounts.
+    columns:
+      - name: "Date"
+        quote: true
+        description: Transaction date.
+        data_tests: [not_null]
+      - name: "Time"
+        quote: true
+        description: Transaction time.
+        data_tests: [not_null]
+      - name: "Time Zone"
+        quote: true
+        description: Time zone of Date and Time.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [GMT]
+      - name: "Name"
+        quote: true
+        description: Customer name.
+      - name: "Transaction ID"
+        quote: true
+        description: PayPal transaction id.
+        data_tests: [unique, not_null]
+      - name: "Reference Txn ID"
+        quote: true
+        description: PayPal id of the related original transaction.
+        data_tests:
+          - not_null:
+              config:
+                where: '"Type" <> ''Website Payment'''
+      - name: "Type"
+        quote: true
+        description: PayPal transaction type.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Website Payment, Refund, Payment Reversal]
+      - name: "Status"
+        quote: true
+        description: PayPal transaction status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Completed, Denied, Refunded, Reversed]
+      - name: "Currency"
+        quote: true
+        description: Transaction currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, GBP]
+      - name: "Gross"
+        quote: true
+        description: Gross amount, decimal comma.
+        data_tests: [not_null]
+      - name: "Fee"
+        quote: true
+        description: PayPal fee, decimal comma.
+        data_tests: [not_null]
+      - name: "Net"
+        quote: true
+        description: Net amount, decimal comma.
+        data_tests: [not_null]
+      - name: "Invoice ID"
+        quote: true
+        description: Our order id passed to PayPal.
+        data_tests: [not_null]
+
+  - name: raw_google_play_earnings_202606
+    description: Google Play earnings report for June 2026. Raw load of raw/google_play_earnings_202606.csv, all columns as text. Report banner on line 1 skipped. All dates and times are in America/Los_Angeles.
+    columns: &google_play_columns
+      - name: "Transaction Date"
+        quote: true
+        description: Transaction date, America/Los_Angeles.
+        data_tests: [not_null]
+      - name: "Transaction Time"
+        quote: true
+        description: Transaction time, America/Los_Angeles.
+        data_tests: [not_null]
+      - name: "Transaction Type"
+        quote: true
+        description: Google Play transaction type.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Charge, Charge refund, Google fee]
+      - name: "Product ID"
+        quote: true
+        description: Product sold.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sub_monthly, sub_quarterly, sub_annual, coach_addon]
+      - name: "Buyer Country"
+        quote: true
+        description: Buyer country.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [US, DE, BR, GB, MX]
+      - name: "Buyer Currency"
+        quote: true
+        description: Currency the buyer paid in.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [USD, EUR, BRL, GBP, MXN]
+      - name: "Amount (Buyer Currency)"
+        quote: true
+        description: Amount in buyer currency.
+        data_tests: [not_null]
+      - name: "Currency Conversion Rate"
+        quote: true
+        description: Rate from buyer currency to merchant currency.
+        data_tests: [not_null]
+      - name: "Merchant Currency"
+        quote: true
+        description: Currency of the merchant payout.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [USD]
+      - name: "Amount (Merchant Currency)"
+        quote: true
+        description: Amount in merchant currency.
+        data_tests: [not_null]
+
+  - name: raw_google_play_earnings_202607_partial
+    description: Google Play earnings report, partial July 2026 tail. Raw load of raw/google_play_earnings_202607_partial.csv, same layout as the June report.
+    columns: *google_play_columns
+
+  - name: raw_fx_rates
+    description: Daily FX rates. Raw load of raw/fx_rates.csv, all columns as text.
+    columns:
+      - name: rate_date
+        description: Rate date.
+        data_tests: [not_null]
+      - name: currency
+        description: Currency code.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, GBP, BRL, MXN, CLP, COP, ARS]
+      - name: usd_rate
+        description: USD per 1 unit of currency.
+        data_tests: [not_null]
+      - name: published_at
+        description: Publication timestamp.
+        data_tests: [not_null]
+
+  - name: raw_fee_schedule
+    description: Contracted provider fees, only for providers with a contract on file. Raw load of raw/fee_schedule.csv, all columns as text.
+    columns:
+      - name: psp
+        description: Provider.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [adyen, google_play]
+      - name: account
+        description: Provider account the fee applies to.
+        data_tests: [unique, not_null]
+      - name: valid_from
+        description: Date the fee becomes effective.
+        data_tests: [not_null]
+      - name: percent_fee
+        description: Percentage fee.
+        data_tests: [not_null]
+      - name: fixed_fee
+        description: Fixed fee per transaction.
+        data_tests: [not_null]
+      - name: fixed_fee_currency
+        description: Currency of fixed_fee.
