@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build with dbt, then refresh the copy DBeaver looks at.
+# Build with dbt, then refresh the read-only copy DBeaver and the notebook look at.
 set -euo pipefail
 cd "$(dirname "$0")"
 # Bootstrap the virtualenv on first run (needs uv).
@@ -12,14 +12,20 @@ export DBT_PROFILES_DIR=.
 
 dbt "${@:-run}"
 
-cp ../recon_dbt.duckdb ../recon_view.tmp
-mv -f ../recon_view.tmp ../recon_view.duckdb
+# The copy keeps the file name recon_dbt.duckdb: DuckDB's catalog name is the file name,
+# and dbt stores views with fully qualified sources (recon_dbt.raw.x), so a copy under
+# another name breaks every view. Different folder, same name.
+mkdir -p ../view
+cp ../recon_dbt.duckdb ../view/recon_dbt.tmp
+mv -f ../view/recon_dbt.tmp ../view/recon_dbt.duckdb
 
-# Export every table in schema analysis to out/analysis/*.csv
-mkdir -p ../out/analysis
-duckdb ../recon_view.duckdb -noheader -list \
-  "select table_name from duckdb_tables() where schema_name = 'analysis'" |
-while read -r t; do
-  duckdb ../recon_view.duckdb \
-    "copy (select * from analysis.\"$t\") to '../out/analysis/$t.csv' (header)"
+# Export every table in schemas analysis and marts to out/<schema>/*.csv
+for s in analysis marts; do
+  mkdir -p "../out/$s"
+  duckdb ../view/recon_dbt.duckdb -noheader -list \
+    "select table_name from duckdb_tables() where schema_name = '$s'" |
+  while read -r t; do
+    duckdb ../view/recon_dbt.duckdb \
+      "copy (select * from $s.\"$t\") to '../out/$s/$t.csv' (header)"
+  done
 done

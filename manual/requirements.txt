@@ -1,3 +1,8 @@
 dbt-core==1.12.3
 dbt-duckdb==1.11.0
 duckdb==1.5.5
+# notebook EDA (manual/eda/)
+pandas==3.0.5
+ipykernel==7.3.0
+tabulate==0.10.0
+matplotlib==3.11.1

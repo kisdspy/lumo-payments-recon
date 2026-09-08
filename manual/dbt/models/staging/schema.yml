@@ -1,0 +1,528 @@
+version: 2
+
+# Staging layer: typed views over raw, one per source file.
+# Strict keys here (raw only warns on known duplicates); facts below come from the
+# 2026-09-07 EDA in manual/eda.ipynb.
+
+models:
+  - name: stg_payment_engine_log
+    description: >
+      Payment engine log with types applied. One row per transaction attempt, txn_id is the key.
+      An order has exactly one SALE and at most one REFUND or CHARGEBACK. Reversals are
+      positive in amount_usd and negative in signed_amount_usd.
+    columns:
+      - name: txn_id
+        description: Engine transaction id, unique.
+        data_tests: [unique, not_null]
+      - name: order_id
+        description: Business order id. Shared by a SALE and its REFUND / CHARGEBACK.
+        data_tests: [not_null]
+      - name: operation_type
+        description: SALE, REFUND or CHARGEBACK.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [SALE, REFUND, CHARGEBACK]
+      - name: status
+        description: settled, declined or pending. Only settled rows are money movements.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled, declined, pending]
+      - name: psp
+        description: Payment service provider.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [adyen, paypal_us, paypal_eu, dlocal, google_play]
+      - name: psp_reference
+        description: Transaction id on the provider side. Empty for google_play, present for declined attempts. Unique when present.
+        data_tests:
+          - unique
+          - not_null:
+              config:
+                where: "psp <> 'google_play'"
+      - name: sku
+        description: Product sold.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sub_monthly, sub_quarterly, sub_annual, coach_addon]
+      - name: country
+        description: Customer country, ISO 3166-1 alpha-2.
+        data_tests: [not_null]
+      - name: currency
+        description: Local currency, ISO 4217.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, USD, BRL, GBP, MXN, CLP, COP, ARS]
+      - name: amount_local
+        description: Amount in local currency, always positive. decimal(18,2).
+        data_tests: [not_null]
+      - name: fx_rate_applied
+        description: USD per 1 unit of local currency as applied by the engine. decimal(18,6). 1.000000 for USD.
+        data_tests: [not_null]
+      - name: fx_date_applied
+        description: Date of the FX rate the engine applied. Can lag created_at_utc.
+        data_tests: [not_null]
+      - name: amount_usd
+        description: Amount in USD as computed by the engine, always positive. decimal(18,2).
+        data_tests: [not_null]
+      - name: signed_amount_usd
+        description: amount_usd with sign, positive for SALE, negative for REFUND and CHARGEBACK. Sums net out.
+        data_tests: [not_null]
+      - name: created_at_utc
+        description: Attempt creation time, UTC. timestamp.
+        data_tests: [not_null]
+      - name: captured_at_utc
+        description: Capture time, UTC. Null for declined and pending.
+        data_tests:
+          - not_null:
+              config:
+                where: "status = 'settled'"
+
+  - name: stg_paypal_us_activity
+    description: >
+      PayPal US account activity with types applied. One row per export line, key is
+      transaction_id + dup_rank. The single fully identical duplicate line is kept with dup_rank = 2.
+      All rows are USD and GMT. Sign as in PayPal: refunds negative in gross, fee <= 0, net = gross + fee.
+    columns:
+      - name: transaction_id
+        description: PayPal transaction id. Joins to stg_payment_engine_log.psp_reference for psp = paypal_us.
+        data_tests: [not_null]
+      - name: reference_txn_id
+        description: For a Refund, the transaction_id of the original Website Payment. Null otherwise.
+        data_tests:
+          - not_null:
+              config:
+                where: "txn_type = 'Refund'"
+      - name: invoice_id
+        description: Our order id passed to PayPal, same value as stg_payment_engine_log.order_id.
+        data_tests: [not_null]
+      - name: txn_type
+        description: PayPal transaction type.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Website Payment, Refund]
+      - name: status
+        description: PayPal status. Denied rows are declined attempts, Refunded rows are the refunds themselves.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Completed, Denied, Refunded]
+      - name: currency
+        description: Always USD in this account.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [USD]
+      - name: gross
+        description: Gross amount, decimal(18,2). Positive for payments, negative for refunds, positive for Denied although no money moved.
+        data_tests: [not_null]
+      - name: fee
+        description: PayPal fee, decimal(18,2), zero or negative. Zero for Denied and Refund rows.
+        data_tests: [not_null]
+      - name: net
+        description: gross + fee, decimal(18,2). Zero for Denied.
+        data_tests: [not_null]
+      - name: txn_at_utc
+        description: Date and Time combined, timestamp. Source time zone is GMT, so this is UTC.
+        data_tests: [not_null]
+      - name: time_zone
+        description: Source time zone label, kept as a guard.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [GMT]
+      - name: customer_name
+        description: Customer name as shown by PayPal.
+      - name: dup_rank
+        description: 1 for the first occurrence of a transaction_id, 2 for a repeated identical line.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+
+  - name: stg_paypal_eu_activity
+    description: >
+      PayPal EU account activity with types applied. One row per export line, key is
+      transaction_id + dup_rank (no duplicates in this export, dup_rank is always 1).
+      Currencies EUR and GBP, no USD amounts in the export. Time zone GMT. Sign as in PayPal:
+      refunds and payment reversals negative in gross, fee <= 0, net = gross + fee.
+    columns:
+      - name: transaction_id
+        description: PayPal transaction id. Joins to stg_payment_engine_log.psp_reference for psp = paypal_eu.
+        data_tests: [unique, not_null]
+      - name: reference_txn_id
+        description: For Refund and Payment Reversal, the transaction_id of the original Website Payment. Null otherwise.
+        data_tests:
+          - not_null:
+              config:
+                where: "txn_type in ('Refund', 'Payment Reversal')"
+      - name: invoice_id
+        description: Our order id passed to PayPal, same value as stg_payment_engine_log.order_id.
+        data_tests: [not_null]
+      - name: txn_type
+        description: PayPal transaction type. Payment Reversal is a chargeback in engine terms.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Website Payment, Refund, Payment Reversal]
+      - name: status
+        description: PayPal status. Denied rows are declined attempts, Refunded and Reversed are the reversals themselves.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Completed, Denied, Refunded, Reversed]
+      - name: currency
+        description: EUR or GBP. Amounts are in this currency, there is no USD column.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, GBP]
+      - name: gross
+        description: Gross amount in currency, decimal(18,2), parsed from decimal comma. Negative for Refund and Payment Reversal.
+        data_tests: [not_null]
+      - name: fee
+        description: PayPal fee in currency, decimal(18,2), zero or negative. Zero for Denied, Refund and Payment Reversal.
+        data_tests: [not_null]
+      - name: net
+        description: gross + fee, decimal(18,2). Zero for Denied.
+        data_tests: [not_null]
+      - name: txn_at_utc
+        description: Date (DD/MM/YYYY) and Time combined, timestamp. Source time zone is GMT, so this is UTC.
+        data_tests: [not_null]
+      - name: time_zone
+        description: Source time zone label, kept as a guard.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [GMT]
+      - name: customer_name
+        description: Customer name as shown by PayPal, cp1252 decoded.
+      - name: dup_rank
+        description: 1 for the first occurrence of a transaction_id; always 1 in this export.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1]
+                quote: false
+
+  - name: stg_fx_rates
+    description: >
+      Daily reference FX rates, usd_rate = USD per 1 unit of currency, business days only.
+      Key is currency + rate_date + dup_rank; the one duplicated day (BRL 2026-06-10) keeps both rows.
+    columns:
+      - name: currency
+        description: ISO 4217 currency code.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, GBP, BRL, MXN, CLP, COP, ARS]
+      - name: rate_date
+        description: Date the rate applies to. date.
+        data_tests: [not_null]
+      - name: usd_rate
+        description: USD per 1 unit of currency. decimal(18,6).
+        data_tests: [not_null]
+      - name: dup_rank
+        description: 1 for the first rate of a currency and day, 2 for a second conflicting rate on the same day.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+
+  - name: stg_dlocal_transactions
+    description: >
+      dLocal transactions export with types applied. One row per export line, key is
+      transaction_id + dup_rank. The single fully identical duplicate line (DL-90001316) is kept
+      with dup_rank = 2. Five LatAm currencies; local amounts converted from minor units;
+      dLocal's own USD and fee kept as reported. Sign added by transaction_type.
+    columns:
+      - name: transaction_id
+        description: dLocal transaction id. Joins to stg_payment_engine_log.psp_reference for psp = dlocal.
+        data_tests: [not_null]
+      - name: invoice_id
+        description: Our order id passed to dLocal, same value as stg_payment_engine_log.order_id.
+        data_tests: [not_null]
+      - name: transaction_type
+        description: PAYMENT or REFUND.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PAYMENT, REFUND]
+      - name: status
+        description: PAID, REJECTED, IN_MEDIATION (one disputed payment) or REFUNDED.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PAID, REJECTED, IN_MEDIATION, REFUNDED]
+      - name: txn_at_utc
+        description: Transaction time, UTC. timestamp.
+        data_tests: [not_null]
+      - name: country
+        description: Customer country, ISO 3166-1 alpha-2.
+        data_tests: [not_null]
+      - name: currency
+        description: Local currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ARS, BRL, CLP, COP, MXN]
+      - name: currency_exponent
+        description: Decimal places of the local currency, 0 for CLP, 2 otherwise.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 2]
+                quote: false
+      - name: local_amount_minor
+        description: Amount in minor units as exported.
+        data_tests: [not_null]
+      - name: amount_local
+        description: Amount in local currency, local_amount_minor / 10^currency_exponent. decimal(18,2), unsigned.
+        data_tests: [not_null]
+      - name: fx_rate_local_per_usd
+        description: dLocal rate as exported, local currency per 1 USD. decimal(18,6).
+        data_tests: [not_null]
+      - name: usd_rate
+        description: 1 / fx_rate_local_per_usd, USD per 1 unit of local currency, comparable with stg_fx_rates.usd_rate.
+        data_tests: [not_null]
+      - name: amount_usd
+        description: USD amount as computed by dLocal. decimal(18,2), unsigned.
+        data_tests: [not_null]
+      - name: fee_usd
+        description: dLocal fee in USD. Zero for REFUND, non-zero for REJECTED as well as PAID.
+        data_tests: [not_null]
+      - name: signed_amount_local
+        description: amount_local with sign, PAYMENT positive, REFUND negative.
+        data_tests: [not_null]
+      - name: signed_amount_usd
+        description: amount_usd with sign, PAYMENT positive, REFUND negative.
+        data_tests: [not_null]
+      - name: dup_rank
+        description: 1 for the first occurrence of a transaction_id, 2 for a repeated identical line.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+
+  - name: stg_adyen_payment_accounting
+    description: >
+      Adyen payment accounting report with types applied. One row per export line, one line per
+      event: a payment is Authorised then Settled, optionally Refunded or Chargeback; a declined
+      attempt is a single Refused row. Key is psp_reference + record_type + dup_rank (no duplicates
+      in this export, dup_rank is always 1). Amounts unsigned in a debit/credit pair, signed_gross
+      is credit minus debit. Commission, markup and net_credit only on Settled rows. Time converted
+      from Europe/Amsterdam to UTC.
+    columns:
+      - name: company_account
+        description: Adyen company account, always LumoGroup.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [LumoGroup]
+      - name: merchant_account
+        description: Adyen merchant account. LumoECOM_EU carries EUR and GBP, LumoAPP_US carries USD. Joins to fee_schedule.account.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [LumoECOM_EU, LumoAPP_US]
+      - name: psp_reference
+        description: >
+          Adyen payment id. Joins to stg_payment_engine_log.psp_reference for SALE rows with psp = adyen.
+          Refunded and Chargeback rows carry the psp_reference of the original payment, the engine
+          gives its REFUND / CHARGEBACK rows their own psp_reference, so reversals join on merchant_reference.
+        data_tests: [not_null]
+      - name: merchant_reference
+        description: Our order id passed to Adyen, same value as stg_payment_engine_log.order_id.
+        data_tests: [not_null]
+      - name: record_type
+        description: Event type. Authorised and Settled are the same payment before and after settlement, Refused is a declined attempt, Refunded and Chargeback are reversals.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Authorised, Settled, Refused, Refunded, Chargeback]
+      - name: event_at_utc
+        description: Creation Date converted from the TimeZone column (Europe/Amsterdam) to UTC.
+        data_tests: [not_null]
+      - name: event_at_local
+        description: Creation Date as printed in the report, Europe/Amsterdam local time.
+      - name: time_zone
+        description: Time zone of event_at_local, always Europe/Amsterdam.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Europe/Amsterdam]
+      - name: currency
+        description: Gross Currency, EUR / GBP / USD. Same as net_currency on every row.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, GBP, USD]
+      - name: gross_debit
+        description: Money going out, filled only on Refunded and Chargeback rows.
+        data_tests:
+          - not_null:
+              config:
+                where: "record_type in ('Refunded', 'Chargeback')"
+      - name: gross_credit
+        description: Money coming in, filled on Authorised, Settled and Refused rows. Refused carries the attempted amount.
+        data_tests:
+          - not_null:
+              config:
+                where: "record_type in ('Authorised', 'Settled', 'Refused')"
+      - name: signed_gross
+        description: gross_credit minus gross_debit, engine sign convention. Positive on Authorised / Settled / Refused, negative on Refunded / Chargeback.
+        data_tests: [not_null]
+      - name: commission
+        description: Adyen commission, Settled rows only.
+        data_tests:
+          - not_null:
+              config:
+                where: "record_type = 'Settled'"
+      - name: markup
+        description: Adyen markup, Settled rows only.
+        data_tests:
+          - not_null:
+              config:
+                where: "record_type = 'Settled'"
+      - name: fee
+        description: commission + markup, 0 where neither is filled. Compared with fee_schedule (2.5% for both accounts).
+      - name: net_currency
+        description: Net Currency, always equal to currency.
+      - name: net_debit
+        description: Net Debit, Refunded and Chargeback rows.
+      - name: net_credit
+        description: Net Credit = gross_credit - commission - markup, Settled rows only.
+        data_tests:
+          - not_null:
+              config:
+                where: "record_type = 'Settled'"
+      - name: batch_number
+        description: Adyen payout batch, 23 to 27 in this export. Informational.
+        data_tests: [not_null]
+      - name: dup_rank
+        description: 1 for the first row per psp_reference + record_type, 2+ for repeats. Always 1 here.
+        data_tests: [not_null]
+
+  - name: stg_google_play_earnings
+    description: >
+      Google Play earnings report with types applied, June and partial July files stacked. One row per
+      report line: Charge is the sale, Google fee its commission on a separate line with the same time
+      and product, Charge refund a refund with its own time. No provider id and no order id, key is
+      txn_at_utc + product_id + txn_type + dup_rank. Amounts signed by Google. Time converted from
+      America/Los_Angeles to UTC. Merchant currency always USD.
+    columns:
+      - name: source_file
+        description: Which raw file the line came from.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [google_play_earnings_202606, google_play_earnings_202607_partial]
+      - name: txn_type
+        description: Charge (sale), Google fee (commission line), Charge refund (refund).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Charge, Google fee, Charge refund]
+      - name: product_id
+        description: Play product, part of the matching key.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sub_monthly, sub_quarterly, sub_annual, coach_addon]
+      - name: buyer_country
+        description: Buyer country.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [US, DE, GB, BR, MX]
+      - name: buyer_currency
+        description: Currency the buyer paid in, matches stg_payment_engine_log.currency.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [USD, EUR, GBP, BRL, MXN]
+      - name: amount_buyer
+        description: Signed amount in buyer currency.
+        data_tests: [not_null]
+      - name: conversion_rate
+        description: Google's rate, USD per unit of buyer currency. 1 for USD.
+        data_tests: [not_null]
+      - name: merchant_currency
+        description: Always USD.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [USD]
+      - name: amount_usd
+        description: Signed amount in USD as Google converted it.
+        data_tests: [not_null]
+      - name: txn_at_local
+        description: Transaction Date + Time as printed, America/Los_Angeles.
+        data_tests: [not_null]
+      - name: txn_at_utc
+        description: txn_at_local converted to UTC. Equals stg_payment_engine_log.captured_at_utc for the same sale.
+        data_tests: [not_null]
+      - name: dup_rank
+        description: 1 for the first row per txn_at_utc + product_id + txn_type, 2+ for repeats.
+        data_tests: [not_null]
+
+  - name: stg_fee_schedule
+    description: Contracted fees with types applied. Only adyen (two accounts) and google_play have a contract on file.
+    columns:
+      - name: psp
+        description: Provider, same values as stg_payment_engine_log.psp.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [adyen, google_play]
+      - name: account
+        description: Provider account the rate applies to. Joins to stg_adyen_payment_accounting.merchant_account; LumoPlayMain for google_play.
+        data_tests: [unique, not_null]
+      - name: valid_from
+        description: Contract start, all 2026-01-01.
+      - name: percent_fee
+        description: Percent of gross, 2.5 for adyen, 15 for google_play.
+        data_tests: [not_null]
+      - name: fixed_fee
+        description: Fixed part per transaction, 0 everywhere.
+      - name: fixed_fee_currency
+        description: Currency of fixed_fee, null since fixed_fee is 0.

@@ -1,0 +1,161 @@
+version: 2
+
+models:
+  - name: recon_pairs
+    description: >
+      Every engine <-> provider pair for June 2026 across the five providers, one row per pair,
+      common columns. Union of int_recon_*. Drill-down table behind recon_summary and recon_totals.
+    columns:
+      - name: psp
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [paypal_us, paypal_eu, dlocal, adyen, google_play]
+      - name: txn_id
+        description: Engine txn_id, null when the row exists only at the provider.
+      - name: provider_ref
+        description: Provider's own id of the row; for google_play, time + product.
+      - name: cause
+        description: Root cause of the pair, see the int_recon_* models for the rule order.
+        data_tests: [not_null]
+      - name: cause_bucket
+        description: matched / explained / unexplained.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, explained, unexplained]
+      - name: engine_usd
+        data_tests: [not_null]
+      - name: provider_usd
+        data_tests: [not_null]
+      - name: diff_usd
+        description: provider_usd - engine_usd.
+        data_tests: [not_null]
+
+  - name: recon_summary
+    description: >
+      README step 3. Discrepancy summary at provider x cause grain: row count, absolute USD, signed USD,
+      share of the total absolute discrepancy (all providers) and within the provider.
+    columns:
+      - name: psp
+        data_tests: [not_null]
+      - name: cause
+        data_tests: [not_null]
+      - name: row_count
+        data_tests: [not_null]
+      - name: abs_usd
+        description: sum of |diff_usd|.
+        data_tests: [not_null]
+      - name: signed_usd
+        description: sum of diff_usd, positive = provider shows more than the engine.
+        data_tests: [not_null]
+      - name: share_pct
+        description: abs_usd / total abs_usd over all providers, percent.
+      - name: share_in_psp_pct
+        description: abs_usd / abs_usd of the provider, percent.
+
+  - name: recon_totals
+    description: >
+      README step 5. Per provider and in total: money on each side, total discrepancy, its split
+      into matched / explained / unexplained, and the residual (must be 0).
+    columns:
+      - name: psp
+        data_tests: [unique, not_null]
+      - name: engine_usd
+        description: Engine settled money in June, signed.
+      - name: provider_usd
+        description: Provider money in June, signed.
+      - name: total_diff
+        description: provider_usd - engine_usd.
+      - name: residual
+        description: total_diff - matched - explained - unexplained.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0]
+
+  - name: fee_summary
+    description: >
+      README step 4. Reported fees against contracted rates for June 2026, provider x account x
+      currency, amounts in the provider's currency. contract_pct only where fee_schedule has a row.
+    columns:
+      - name: psp
+        data_tests: [not_null]
+      - name: fee_actual
+        description: Fee the provider reported on successful payments.
+      - name: contract_pct
+        description: Percent from fee_schedule, null without a contract.
+      - name: fee_gap
+        description: fee_actual - fee_contract, positive = provider charged more than the contract.
+      - name: rows_off_contract
+        description: Rows whose fee differs from round(gross x contract_pct, 2) by more than a cent.
+      - name: fee_on_declined
+        description: Fees charged on declined / rejected attempts.
+
+  - name: recon_summary_by_psp
+    description: >
+      recon_summary collapsed to one row per provider plus a total row, no causes: pairs, pairs with a
+      difference, absolute and signed USD, share of the total absolute discrepancy.
+    columns:
+      - name: psp
+        data_tests: [unique, not_null]
+      - name: row_count
+        description: All pairs for the provider in June 2026.
+      - name: discrepancy_rows
+        description: Pairs with diff_usd <> 0.
+      - name: abs_usd
+        description: sum of |diff_usd|.
+      - name: signed_usd
+        description: sum of diff_usd, positive = provider shows more than the engine.
+      - name: share_pct
+        description: abs_usd / total abs_usd, percent; the total row shows 100.
+
+  - name: engine_corrected
+    description: >
+      One row per pair from recon_pairs with the discrepancy resolved: corrected_usd is taken from the
+      engine or the provider depending on the cause (rule table in the model header). Restatement of
+      the engine's June 2026 money.
+    columns:
+      - name: psp
+        data_tests: [not_null]
+      - name: cause
+        data_tests: [not_null]
+      - name: corrected_from
+        description: Which side supplies corrected_usd for this cause.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [engine, provider]
+      - name: engine_usd
+        data_tests: [not_null]
+      - name: provider_usd
+        data_tests: [not_null]
+      - name: corrected_usd
+        description: The figure we believe for this pair.
+        data_tests: [not_null]
+      - name: correction_usd
+        description: corrected_usd - engine_usd.
+        data_tests: [not_null]
+
+  - name: revenue_corrected_by_psp
+    description: >
+      June 2026 revenue per provider and in total: engine as is, corrected after resolving every
+      discrepancy, provider as reported, and the two gaps between them.
+    columns:
+      - name: psp
+        data_tests: [unique, not_null]
+      - name: engine_usd
+        description: Engine settled money in June, signed.
+      - name: corrected_usd
+        description: Restated June revenue.
+      - name: correction_usd
+        description: corrected_usd - engine_usd.
+      - name: provider_usd
+        description: Provider money in June, signed.
+      - name: corrected_minus_provider
+        description: Rows where the engine is right and the provider is not (duplicates, cutoff, broken dates, provider rate).
+      - name: corrected_rows
+        description: Pairs whose figure changed.

@@ -8,6 +8,14 @@ seed-paths: ['seeds']
 target-path: target
 clean-targets: [target, dbt_packages]
 
+# Export window from the provider file names (_20260601_20260703): end is exclusive.
+vars:
+  export_window_start: '2026-06-01'
+  export_window_end: '2026-07-04'
+  # Reporting period (README): June 2026, end is exclusive.
+  report_period_start: '2026-06-01'
+  report_period_end: '2026-07-01'
+
 models:
   recon:
     +persist_docs:

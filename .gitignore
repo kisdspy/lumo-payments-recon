@@ -1,10 +1,13 @@
+# folders and files
 claude/
+raw/
 CLAUDE.md
 README.md
 README.ru.md
 
 # working notes, not for the reviewer
 manual/MODE.md
+eda/
 manual/archive/
 
 # environments and build artefacts
@@ -17,7 +20,7 @@ manual/out/
 
 # databases: committed once at the end, remove the recon_dbt line then
 manual/recon_dbt.duckdb
-manual/recon_view.duckdb
+manual/view/
 manual/recon_manual_backup.duckdb
 *.duckdb.wal
 *.tmp

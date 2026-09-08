@@ -1,0 +1,330 @@
+version: 2
+
+# Intermediate: one model per provider, one row per engine/provider pair with a cause.
+# All int_recon_* models share the same output columns so marts can union them.
+
+models:
+  - name: int_recon_paypal_us
+    description: >
+      Engine log vs PayPal US export for June 2026, one row per pair (full outer join on
+      psp_reference = transaction_id). Each row carries a cause; diff_usd = provider_usd - engine_usd.
+      Sum of diff_usd over all rows is the total discrepancy for this provider.
+    columns:
+      - name: psp
+        description: Provider label, constant paypal_us.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [paypal_us]
+      - name: txn_id
+        description: Engine transaction id, null when the row exists only at the provider.
+      - name: order_id
+        description: Engine order id.
+      - name: operation_type
+        description: Engine operation type.
+      - name: engine_status
+        description: Engine status.
+      - name: engine_at
+        description: Engine timestamp used for the period rule, captured_at_utc or created_at_utc.
+      - name: transaction_id
+        description: PayPal transaction id, null when the row exists only in the engine.
+      - name: invoice_id
+        description: Our order id as seen by PayPal.
+      - name: provider_type
+        description: PayPal Type.
+      - name: provider_status
+        description: PayPal Status.
+      - name: provider_at
+        description: PayPal timestamp, UTC.
+      - name: dup_rank
+        description: 2 marks the repeated identical export line.
+      - name: engine_amount
+        description: Engine amount_usd, unsigned, for inspection.
+      - name: provider_amount
+        description: PayPal gross, signed, for inspection.
+      - name: engine_usd
+        description: Money on the engine side, settled rows only, signed. Zero for the duplicate line.
+        data_tests: [not_null]
+      - name: provider_usd
+        description: Money on the provider side, all but Denied, signed.
+        data_tests: [not_null]
+      - name: diff_usd
+        description: provider_usd - engine_usd.
+        data_tests: [not_null]
+      - name: cause
+        description: >
+          Reconciliation outcome, first rule that fires wins: missing_at_provider, missing_in_engine,
+          duplicate_row_in_export, period_cutoff, matched_declined, amount_mismatch, matched, status_mismatch.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, matched_declined, missing_at_provider, missing_in_engine,
+                         duplicate_row_in_export, period_cutoff, amount_mismatch, status_mismatch]
+      - name: engine_in_period
+        description: Engine timestamp falls inside the reporting period.
+      - name: provider_in_period
+        description: Provider timestamp falls inside the reporting period.
+
+  - name: int_recon_paypal_eu
+    description: >
+      Engine log vs PayPal EU export for June 2026, one row per pair (full outer join on
+      psp_reference = transaction_id). Provider side valued in USD as gross x reference usd_rate
+      (last rate on or before the provider date). Each row carries a cause;
+      diff_usd = provider_usd - engine_usd.
+    columns:
+      - name: psp
+        description: Provider label, constant paypal_eu.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [paypal_eu]
+      - name: currency
+        description: EUR or GBP, from either side.
+        data_tests: [not_null]
+      - name: engine_amount
+        description: Engine amount_local, unsigned.
+      - name: provider_amount
+        description: PayPal gross in currency, signed.
+      - name: engine_fx_rate
+        description: Rate the engine applied (USD per unit).
+      - name: engine_fx_date
+        description: Date of the rate the engine applied.
+      - name: provider_fx_rate
+        description: Reference rate used to value the provider side.
+      - name: provider_fx_date
+        description: Date of that reference rate (last business day on or before provider_at).
+      - name: provider_date_swapped
+        description: True when the provider date with day and month swapped equals the engine date at the same time of day.
+      - name: engine_usd
+        description: Money on the engine side, settled rows in period, engine's own USD, signed.
+        data_tests: [not_null]
+      - name: provider_usd
+        description: Money on the provider side, all but Denied in period, gross x reference rate, signed.
+        data_tests: [not_null]
+      - name: diff_usd
+        description: provider_usd - engine_usd.
+        data_tests: [not_null]
+      - name: cause
+        description: >
+          Reconciliation outcome, first rule that fires wins: missing_at_provider, missing_in_engine,
+          duplicate_row_in_export, provider_date_format, period_cutoff, matched_declined,
+          status_mismatch, amount_mismatch, matched, engine_fx_date_error, fx_date_lag.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, matched_declined, missing_at_provider, missing_in_engine,
+                         duplicate_row_in_export, provider_date_format, period_cutoff,
+                         status_mismatch, amount_mismatch, engine_fx_date_error, fx_date_lag]
+
+  - name: int_recon_dlocal
+    description: >
+      Engine log vs dLocal export for June 2026, one row per pair (full outer join on
+      psp_reference = transaction_id). Provider side valued as dLocal reports it (its own USD);
+      a reference valuation at fx_rates is carried in reference_usd. Each row carries a cause;
+      diff_usd = provider_usd - engine_usd.
+    columns:
+      - name: psp
+        description: Provider label, constant dlocal.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [dlocal]
+      - name: currency
+        description: Local currency from either side.
+        data_tests: [not_null]
+      - name: engine_amount
+        description: Engine amount_local, unsigned.
+      - name: provider_amount
+        description: dLocal amount in local currency, signed by transaction_type.
+      - name: engine_fx_rate
+        description: Rate the engine applied, USD per unit. 1.000000 marks the three unconverted rows.
+      - name: provider_fx_rate
+        description: dLocal's rate as USD per unit (1 / fx_rate).
+      - name: reference_fx_rate
+        description: fx_rates rate as of the provider date, USD per unit.
+      - name: reference_usd
+        description: Provider local amount at the reference rate, signed. For the note, not used in cause.
+      - name: provider_fee_usd
+        description: dLocal fee in USD as reported, including on REJECTED rows.
+      - name: engine_usd
+        description: Money on the engine side, settled rows in period, engine's own USD, signed.
+        data_tests: [not_null]
+      - name: provider_usd
+        description: Money on the provider side, PAID and REFUNDED rows in period, dLocal's own USD, signed.
+        data_tests: [not_null]
+      - name: diff_usd
+        description: provider_usd - engine_usd.
+        data_tests: [not_null]
+      - name: cause
+        description: >
+          Reconciliation outcome, first rule that fires wins: missing_at_provider, missing_in_engine,
+          duplicate_row_in_export, period_cutoff, matched_declined, status_mismatch, amount_mismatch,
+          engine_fx_rate_error, matched, provider_fx_rate.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, matched_declined, missing_at_provider, missing_in_engine,
+                         duplicate_row_in_export, period_cutoff, status_mismatch, amount_mismatch,
+                         engine_fx_rate_error, provider_fx_rate]
+
+  - name: int_recon_adyen
+    description: >
+      Engine log vs Adyen payment accounting report for June 2026, one row per pair. Provider side is
+      money events (Settled, Refused, Refunded, Chargeback; Authorised left out). Sales and declines
+      pair on psp_reference, reversals on order_id + type because Adyen books them under the original
+      payment's psp_reference. Provider amounts valued at fx_rates as of the event date, USD account
+      at 1. Each row carries a cause; diff_usd = provider_usd - engine_usd.
+    columns:
+      - name: psp
+        description: Provider label, constant adyen.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [adyen]
+      - name: txn_id
+        description: Engine txn_id, null when the event exists only at Adyen.
+      - name: order_id
+        description: Engine order_id.
+      - name: operation_type
+        description: Engine operation type.
+      - name: engine_status
+        description: Engine status.
+      - name: engine_at
+        description: Engine capture time, creation time where never captured.
+      - name: provider_reference
+        description: Adyen Psp Reference of the event. For reversals it is the original payment's reference.
+      - name: merchant_reference
+        description: Adyen Merchant Reference, our order id.
+      - name: merchant_account
+        description: LumoECOM_EU or LumoAPP_US.
+      - name: provider_type
+        description: Adyen Record Type of the money event, Settled / Refused / Refunded / Chargeback.
+      - name: provider_at
+        description: Event time in UTC.
+      - name: dup_rank
+        description: dup_rank of the provider row, always 1 for Adyen.
+      - name: currency
+        description: Currency of the pair.
+      - name: engine_amount
+        description: Engine local amount, unsigned.
+      - name: provider_amount
+        description: Adyen gross amount, unsigned.
+      - name: engine_fx_rate
+        description: Rate the engine applied, USD per unit.
+      - name: engine_fx_date
+        description: Rate date the engine applied.
+      - name: provider_fx_rate
+        description: fx_rates rate used for the provider side, 1 for USD.
+      - name: provider_fx_date
+        description: Rate date used for the provider side.
+      - name: provider_fee
+        description: Commission + Markup in local currency, Settled rows only, else 0.
+      - name: provider_fee_usd
+        description: provider_fee at the same rate as the amount.
+      - name: engine_in_period
+        description: Engine row falls in June 2026.
+      - name: provider_in_period
+        description: Provider event falls in June 2026.
+      - name: engine_usd
+        description: Money on the engine side, settled rows in period, engine's own USD, signed.
+        data_tests: [not_null]
+      - name: provider_usd
+        description: Money on the provider side, Settled / Refunded / Chargeback in period, valued at fx_rates, signed.
+        data_tests: [not_null]
+      - name: diff_usd
+        description: provider_usd - engine_usd.
+        data_tests: [not_null]
+      - name: cause
+        description: >
+          Reconciliation outcome, first rule that fires wins: missing_at_provider, missing_in_engine,
+          duplicate_row_in_export, period_cutoff, matched_declined, status_mismatch, amount_mismatch,
+          matched, engine_fx_date_error, fx_date_lag.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, matched_declined, missing_at_provider, missing_in_engine,
+                         duplicate_row_in_export, period_cutoff, status_mismatch, amount_mismatch,
+                         engine_fx_date_error, fx_date_lag]
+
+  - name: int_recon_google_play
+    description: >
+      Engine log vs Google Play earnings report for June 2026, one row per pair. No provider id
+      exists, pairs are formed on capture time + product + type (captured_at_utc = report time in UTC,
+      sku = Product ID, SALE <-> Charge, REFUND <-> Charge refund). Google fee lines are joined onto
+      the Charge as provider_fee_usd for the 15% check. USD is Google's own conversion. Each row
+      carries a cause; diff_usd = provider_usd - engine_usd.
+    columns:
+      - name: psp
+        description: Provider label, constant google_play.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [google_play]
+      - name: txn_id
+        description: Engine txn_id, null when the line exists only in the report.
+      - name: order_id
+        description: Engine order_id.
+      - name: operation_type
+        description: Engine operation type.
+      - name: engine_status
+        description: Engine status, always settled for google_play.
+      - name: engine_at
+        description: Engine capture time.
+      - name: source_file
+        description: Which report file the provider line came from.
+      - name: provider_type
+        description: Charge or Charge refund.
+      - name: buyer_country
+        description: Buyer country from the report.
+      - name: provider_at
+        description: Report time in UTC.
+      - name: dup_rank
+        description: dup_rank of the provider row, always 1 here.
+      - name: product_id
+        description: Product, engine sku or report Product ID.
+      - name: currency
+        description: Buyer currency of the pair.
+      - name: engine_amount
+        description: Engine local amount, unsigned.
+      - name: provider_amount
+        description: Report buyer-currency amount, unsigned.
+      - name: engine_fx_rate
+        description: Rate the engine applied, USD per unit.
+      - name: engine_fx_date
+        description: Rate date the engine applied.
+      - name: provider_fx_rate
+        description: Google's Currency Conversion Rate, USD per unit.
+      - name: provider_fee_usd
+        description: Google fee for the Charge, positive USD. Compared with fee_schedule (15%).
+      - name: engine_in_period
+        description: Engine row falls in June 2026.
+      - name: provider_in_period
+        description: Report line falls in June 2026 (UTC).
+      - name: engine_usd
+        description: Money on the engine side, settled rows in period, engine's own USD, signed.
+        data_tests: [not_null]
+      - name: provider_usd
+        description: Money on the provider side, Charge and Charge refund in period, Google's USD, signed.
+        data_tests: [not_null]
+      - name: diff_usd
+        description: provider_usd - engine_usd.
+        data_tests: [not_null]
+      - name: cause
+        description: >
+          Reconciliation outcome, first rule that fires wins: missing_at_provider, missing_in_engine,
+          duplicate_row_in_export, period_cutoff, status_mismatch, amount_mismatch, matched, provider_fx_rate.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, missing_at_provider, missing_in_engine, duplicate_row_in_export,
+                         period_cutoff, status_mismatch, amount_mismatch, provider_fx_rate]

@@ -82,4 +82,10 @@ mv ../.venv ../.venv_old
 
 cd /Users/ik/Vscode/simple_life
 git init
+git push -u origin main --force
 git add .gitignore raw manual
+
+
+./run.sh docs generate
+source ../.venv/bin/activate
+DBT_PROFILES_DIR=. dbt docs serve --port 8080
