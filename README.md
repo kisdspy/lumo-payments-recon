@@ -66,8 +66,8 @@ The database is written to `manual/recon_dbt.duckdb`. The script also refreshes 
 ## Data
 
 The source CSVs (engine log, provider exports, FX rates, fee schedule) are not part of this
-repository. The models expect them under `raw/` at the repository root, with the file names
-listed in `manual/dbt/models/raw/sources.yml`.
+repository. Put them in `raw/` at the repository root; the expected file names and formats are
+listed in `raw/README.md`.
 
 Reporting period is June 2026; the exports intentionally cover a few days on either side of the
 month boundary, and the cut-off is handled in the staging and intermediate layers.

@@ -1,6 +1,7 @@
 # folders and files
 claude/
-raw/
+raw/*
+!raw/README.md
 manual/recon_lumo.pdf
 CLAUDE.md
 TASK.md
