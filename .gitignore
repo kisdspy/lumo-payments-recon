@@ -1,13 +1,13 @@
 # folders and files
 claude/
 raw/
+manual/recon_lumo.pdf
 CLAUDE.md
 README.md
 README.ru.md
 
 # working notes, not for the reviewer
 manual/MODE.md
-eda/
 manual/archive/
 
 # environments and build artefacts
