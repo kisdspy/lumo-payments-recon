@@ -1,0 +1,9 @@
+psp,account,currency,row_count,gross,fee_actual,fee_actual_pct,contract_pct,fee_contract,fee_gap,rows_off_contract,fee_on_declined
+adyen,LumoAPP_US,USD,306,6276.94,157.00,2.5,2.5000,156.52,0.48,1,0.00
+adyen,LumoECOM_EU,EUR,1007,19355.93,483.98,2.5,2.5000,482.84,1.14,1,0.00
+adyen,LumoECOM_EU,GBP,263,4596.38,114.01,2.48,2.5000,114.01,0.00,0,0.00
+dlocal,,USD,1151,15169.47,682.88,4.5,,,,,68.40
+google_play,LumoPlayMain,USD,766,14930.34,2249.20,15.06,15.0000,2240.20,9.00,6,0.00
+paypal_eu,,EUR,1398,28746.02,1321.35,4.6,,,,,0.00
+paypal_eu,,GBP,259,4259.41,201.13,4.72,,,,,0.00
+paypal_us,,USD,1895,36731.05,2209.30,6.01,,,,,0.00

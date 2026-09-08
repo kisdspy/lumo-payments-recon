@@ -1,0 +1,26 @@
+psp	cause	row_count	abs_usd	signed_usd	share_pct	share_in_psp_pct
+adyen	missing_in_engine	2	75.65	-53.93	0.04	54.93
+adyen	amount_mismatch	2	40.36	-40.36	0.02	29.3
+adyen	status_mismatch	1	10.9	-10.9	0.01	7.91
+adyen	period_cutoff	1	10.79	-10.79	0.01	7.83
+adyen	fx_date_lag	1	0.03	0.03	0.0	0.02
+adyen	matched	1598	0.0	0.0	0.0	0.0
+adyen	matched_declined	133	0.0	0.0	0.0	0.0
+dlocal	engine_fx_rate_error	3	200679.44	-200679.44	99.84	99.99
+dlocal	missing_at_provider	1	7.42	-7.42	0.0	0.0
+dlocal	amount_mismatch	1	7.36	-7.36	0.0	0.0
+dlocal	duplicate_row_in_export	1	7.13	7.13	0.0	0.0
+dlocal	status_mismatch	1	6.45	-6.45	0.0	0.0
+dlocal	provider_fx_rate	3	0.49	0.49	0.0	0.0
+dlocal	matched	1161	0.0	0.0	0.0	0.0
+dlocal	matched_declined	109	0.0	0.0	0.0	0.0
+google_play	matched	776	0.0	0.0	0.0	
+paypal_eu	missing_in_engine	2	92.35	-92.35	0.05	73.5
+paypal_eu	provider_date_format	3	32.73	-32.73	0.02	26.05
+paypal_eu	engine_fx_date_error	1	0.56	-0.56	0.0	0.45
+paypal_eu	matched	1681	0.0	0.0	0.0	0.0
+paypal_eu	matched_declined	146	0.0	0.0	0.0	0.0
+paypal_us	status_mismatch	1	24.99	24.99	0.01	71.44
+paypal_us	duplicate_row_in_export	1	9.99	9.99	0.0	28.56
+paypal_us	matched	1932	0.0	0.0	0.0	0.0
+paypal_us	matched_declined	158	0.0	0.0	0.0	0.0

@@ -17,7 +17,6 @@ manual/dbt/target/
 manual/dbt/logs/
 manual/dbt/dbt_packages/
 manual/dbt/.user.yml
-manual/out/
 
 # databases: committed once at the end, remove the recon_dbt line then
 manual/recon_dbt.duckdb

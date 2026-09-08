@@ -1,0 +1,7 @@
+psp	row_count	discrepancy_rows	abs_usd	signed_usd	share_pct
+dlocal	1280.0	10.0	200708.29	-200693.05	99.85
+adyen	1738.0	7.0	137.73	-115.95	0.07
+paypal_eu	1833.0	6.0	125.64	-125.64	0.06
+paypal_us	2092.0	2.0	34.98	34.98	0.02
+google_play	776.0	0.0	0.0	0.0	0.0
+total	7719.0	25.0	201006.64	-200899.66	100.0

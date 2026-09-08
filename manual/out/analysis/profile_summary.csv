@@ -1,0 +1,100 @@
+table_name,column_name,rows,distinct_exact,distinct_approx,nulls
+raw_adyen_payment_accounting,Batch Number,3413,5,5,0
+raw_adyen_payment_accounting,Commission,3413,11,12,1794
+raw_adyen_payment_accounting,Company Account,3413,1,1,0
+raw_adyen_payment_accounting,Creation Date,3413,3407,3758,0
+raw_adyen_payment_accounting,Gross Credit,3413,10,11,38
+raw_adyen_payment_accounting,Gross Currency,3413,3,3,0
+raw_adyen_payment_accounting,Gross Debit,3413,10,10,3375
+raw_adyen_payment_accounting,Markup,3413,10,10,1794
+raw_adyen_payment_accounting,Merchant Account,3413,2,2,0
+raw_adyen_payment_accounting,Merchant Reference,3413,1756,1665,0
+raw_adyen_payment_accounting,Net Credit,3413,12,11,1794
+raw_adyen_payment_accounting,Net Currency,3413,3,3,0
+raw_adyen_payment_accounting,Net Debit,3413,10,10,3375
+raw_adyen_payment_accounting,Psp Reference,3413,1756,1759,0
+raw_adyen_payment_accounting,Record Type,3413,5,5,0
+raw_adyen_payment_accounting,TimeZone,3413,1,1,0
+raw_dlocal_transactions,country,1319,5,5,0
+raw_dlocal_transactions,created_at_utc,1319,1318,1518,0
+raw_dlocal_transactions,currency,1319,5,5,0
+raw_dlocal_transactions,currency_exponent,1319,2,2,0
+raw_dlocal_transactions,fee_usd,1319,44,48,0
+raw_dlocal_transactions,fx_rate,1319,84,83,0
+raw_dlocal_transactions,invoice_id,1319,1295,1094,0
+raw_dlocal_transactions,local_amount,1319,26,25,0
+raw_dlocal_transactions,status,1319,4,4,0
+raw_dlocal_transactions,transaction_id,1319,1318,1116,0
+raw_dlocal_transactions,transaction_type,1319,2,2,0
+raw_dlocal_transactions,usd_amount,1319,181,185,0
+raw_fee_schedule,account,3,3,3,0
+raw_fee_schedule,fixed_fee,3,1,1,0
+raw_fee_schedule,fixed_fee_currency,3,0,0,3
+raw_fee_schedule,percent_fee,3,2,2,0
+raw_fee_schedule,psp,3,2,2,0
+raw_fee_schedule,valid_from,3,1,1,0
+raw_fx_rates,currency,204,7,6,0
+raw_fx_rates,published_at,204,30,30,0
+raw_fx_rates,rate_date,204,29,31,0
+raw_fx_rates,usd_rate,204,155,147,0
+raw_google_play_earnings_202606,Amount (Buyer Currency),1544,39,34,0
+raw_google_play_earnings_202606,Amount (Merchant Currency),1544,240,257,0
+raw_google_play_earnings_202606,Buyer Country,1544,5,5,0
+raw_google_play_earnings_202606,Buyer Currency,1544,5,4,0
+raw_google_play_earnings_202606,Currency Conversion Rate,1544,83,79,0
+raw_google_play_earnings_202606,Merchant Currency,1544,1,1,0
+raw_google_play_earnings_202606,Product ID,1544,4,4,0
+raw_google_play_earnings_202606,Transaction Date,1544,30,37,0
+raw_google_play_earnings_202606,Transaction Time,1544,773,874,0
+raw_google_play_earnings_202606,Transaction Type,1544,3,3,0
+raw_google_play_earnings_202607_partial,Amount (Buyer Currency),78,25,26,0
+raw_google_play_earnings_202607_partial,Amount (Merchant Currency),78,34,34,0
+raw_google_play_earnings_202607_partial,Buyer Country,78,5,5,0
+raw_google_play_earnings_202607_partial,Buyer Currency,78,5,4,0
+raw_google_play_earnings_202607_partial,Currency Conversion Rate,78,13,15,0
+raw_google_play_earnings_202607_partial,Merchant Currency,78,1,1,0
+raw_google_play_earnings_202607_partial,Product ID,78,4,4,0
+raw_google_play_earnings_202607_partial,Transaction Date,78,3,3,0
+raw_google_play_earnings_202607_partial,Transaction Time,78,43,45,0
+raw_google_play_earnings_202607_partial,Transaction Type,78,3,3,0
+raw_payment_engine_log,amount_local,7988,40,45,0
+raw_payment_engine_log,amount_usd,7988,324,318,0
+raw_payment_engine_log,captured_at_utc,7988,7396,6395,563
+raw_payment_engine_log,country,7988,12,13,0
+raw_payment_engine_log,created_at_utc,7988,7963,8707,0
+raw_payment_engine_log,currency,7988,8,7,0
+raw_payment_engine_log,fx_date_applied,7988,34,37,0
+raw_payment_engine_log,fx_rate_applied,7988,134,118,0
+raw_payment_engine_log,operation_type,7988,3,3,0
+raw_payment_engine_log,order_id,7988,7813,6855,0
+raw_payment_engine_log,psp,7988,5,5,0
+raw_payment_engine_log,psp_reference,7988,7168,8048,820
+raw_payment_engine_log,sku,7988,4,4,0
+raw_payment_engine_log,status,7988,3,2,0
+raw_payment_engine_log,txn_id,7988,7988,8588,0
+raw_paypal_eu_activity,Currency,1893,2,2,0
+raw_paypal_eu_activity,Date,1893,36,37,0
+raw_paypal_eu_activity,Fee,1893,9,9,0
+raw_paypal_eu_activity,Gross,1893,19,20,0
+raw_paypal_eu_activity,Invoice ID,1893,1851,1896,0
+raw_paypal_eu_activity,Name,1893,10,11,0
+raw_paypal_eu_activity,Net,1893,20,23,0
+raw_paypal_eu_activity,Reference Txn ID,1893,42,46,1851
+raw_paypal_eu_activity,Status,1893,4,4,0
+raw_paypal_eu_activity,Time,1893,1849,1641,0
+raw_paypal_eu_activity,Time Zone,1893,1,1,0
+raw_paypal_eu_activity,Transaction ID,1893,1893,1824,0
+raw_paypal_eu_activity,Type,1893,3,3,0
+raw_paypal_us_activity,Currency,2167,1,1,0
+raw_paypal_us_activity,Date,2167,33,32,0
+raw_paypal_us_activity,Fee,2167,5,5,0
+raw_paypal_us_activity,Gross,2167,11,12,0
+raw_paypal_us_activity,Invoice ID,2167,2109,1962,0
+raw_paypal_us_activity,Name,2167,10,10,0
+raw_paypal_us_activity,Net,2167,12,11,0
+raw_paypal_us_activity,Reference Txn ID,2167,57,54,2110
+raw_paypal_us_activity,Status,2167,3,3,0
+raw_paypal_us_activity,Time,2167,2117,1894,0
+raw_paypal_us_activity,Time Zone,2167,1,1,0
+raw_paypal_us_activity,Transaction ID,2167,2166,2055,0
+raw_paypal_us_activity,Type,2167,2,2,0

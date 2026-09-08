@@ -1,0 +1,6 @@
+cause	n	engine_usd	provider_usd	diff_usd
+engine_fx_date_error	1	65.75	65.19	-0.56
+matched	1681	36224.53	36224.53	0.0
+matched_declined	146	0.0	0.0	0.0
+missing_in_engine	2	0.0	-92.35	-92.35
+provider_date_format	3	32.73	0.0	-32.73

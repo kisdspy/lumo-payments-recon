@@ -1,0 +1,5 @@
+cause	rows	engine_usd	provider_usd	diff_usd
+duplicate_row_in_export	1	0.0	9.99	9.99
+matched	1932	36046.31	36046.31	0.0
+matched_declined	158	0.0	0.0	0.0
+status_mismatch	1	0.0	24.99	24.99

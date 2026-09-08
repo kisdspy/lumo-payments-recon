@@ -1,0 +1,136 @@
+table_name,field,value,n
+raw_adyen_payment_accounting,Batch Number,25,814
+raw_adyen_payment_accounting,Batch Number,26,759
+raw_adyen_payment_accounting,Batch Number,23,756
+raw_adyen_payment_accounting,Batch Number,24,754
+raw_adyen_payment_accounting,Batch Number,27,330
+raw_adyen_payment_accounting,Gross Currency,EUR,2209
+raw_adyen_payment_accounting,Gross Currency,USD,645
+raw_adyen_payment_accounting,Gross Currency,GBP,559
+raw_adyen_payment_accounting,Merchant Account,LumoECOM_EU,2768
+raw_adyen_payment_accounting,Merchant Account,LumoAPP_US,645
+raw_adyen_payment_accounting,Net Currency,EUR,2209
+raw_adyen_payment_accounting,Net Currency,USD,645
+raw_adyen_payment_accounting,Net Currency,GBP,559
+raw_adyen_payment_accounting,Record Type,Settled,1619
+raw_adyen_payment_accounting,Record Type,Authorised,1619
+raw_adyen_payment_accounting,Record Type,Refused,137
+raw_adyen_payment_accounting,Record Type,Refunded,35
+raw_adyen_payment_accounting,Record Type,Chargeback,3
+raw_dlocal_transactions,country,BR,597
+raw_dlocal_transactions,country,MX,326
+raw_dlocal_transactions,country,CL,153
+raw_dlocal_transactions,country,CO,131
+raw_dlocal_transactions,country,AR,112
+raw_dlocal_transactions,currency,BRL,597
+raw_dlocal_transactions,currency,MXN,326
+raw_dlocal_transactions,currency,CLP,153
+raw_dlocal_transactions,currency,COP,131
+raw_dlocal_transactions,currency,ARS,112
+raw_dlocal_transactions,currency_exponent,2,1166
+raw_dlocal_transactions,currency_exponent,0,153
+raw_dlocal_transactions,status,PAID,1184
+raw_dlocal_transactions,status,REJECTED,111
+raw_dlocal_transactions,status,REFUNDED,23
+raw_dlocal_transactions,status,IN_MEDIATION,1
+raw_dlocal_transactions,transaction_type,PAYMENT,1296
+raw_dlocal_transactions,transaction_type,REFUND,23
+raw_fee_schedule,account,LumoPlayMain,1
+raw_fee_schedule,account,LumoAPP_US,1
+raw_fee_schedule,account,LumoECOM_EU,1
+raw_fee_schedule,percent_fee,2.5,2
+raw_fee_schedule,percent_fee,15.0,1
+raw_fee_schedule,psp,adyen,2
+raw_fee_schedule,psp,google_play,1
+raw_fx_rates,currency,BRL,30
+raw_fx_rates,currency,EUR,29
+raw_fx_rates,currency,CLP,29
+raw_fx_rates,currency,GBP,29
+raw_fx_rates,currency,COP,29
+raw_fx_rates,currency,MXN,29
+raw_fx_rates,currency,ARS,29
+raw_google_play_earnings_202606,Buyer Country,US,635
+raw_google_play_earnings_202606,Buyer Country,DE,306
+raw_google_play_earnings_202606,Buyer Country,BR,247
+raw_google_play_earnings_202606,Buyer Country,GB,211
+raw_google_play_earnings_202606,Buyer Country,MX,145
+raw_google_play_earnings_202606,Buyer Currency,USD,635
+raw_google_play_earnings_202606,Buyer Currency,EUR,306
+raw_google_play_earnings_202606,Buyer Currency,BRL,247
+raw_google_play_earnings_202606,Buyer Currency,GBP,211
+raw_google_play_earnings_202606,Buyer Currency,MXN,145
+raw_google_play_earnings_202606,Merchant Currency,USD,1544
+raw_google_play_earnings_202606,Product ID,sub_monthly,811
+raw_google_play_earnings_202606,Product ID,sub_quarterly,341
+raw_google_play_earnings_202606,Product ID,sub_annual,232
+raw_google_play_earnings_202606,Product ID,coach_addon,160
+raw_google_play_earnings_202606,Transaction Type,Charge,767
+raw_google_play_earnings_202606,Transaction Type,Google fee,767
+raw_google_play_earnings_202606,Transaction Type,Charge refund,10
+raw_google_play_earnings_202607_partial,Buyer Country,US,36
+raw_google_play_earnings_202607_partial,Buyer Country,GB,14
+raw_google_play_earnings_202607_partial,Buyer Country,DE,12
+raw_google_play_earnings_202607_partial,Buyer Country,MX,8
+raw_google_play_earnings_202607_partial,Buyer Country,BR,8
+raw_google_play_earnings_202607_partial,Buyer Currency,USD,36
+raw_google_play_earnings_202607_partial,Buyer Currency,GBP,14
+raw_google_play_earnings_202607_partial,Buyer Currency,EUR,12
+raw_google_play_earnings_202607_partial,Buyer Currency,BRL,8
+raw_google_play_earnings_202607_partial,Buyer Currency,MXN,8
+raw_google_play_earnings_202607_partial,Product ID,sub_monthly,55
+raw_google_play_earnings_202607_partial,Product ID,sub_quarterly,9
+raw_google_play_earnings_202607_partial,Product ID,sub_annual,8
+raw_google_play_earnings_202607_partial,Product ID,coach_addon,6
+raw_google_play_earnings_202607_partial,Transaction Type,Charge,35
+raw_google_play_earnings_202607_partial,Transaction Type,Google fee,35
+raw_google_play_earnings_202607_partial,Transaction Type,Charge refund,8
+raw_payment_engine_log,country,US,2841
+raw_payment_engine_log,country,DE,1337
+raw_payment_engine_log,country,FR,752
+raw_payment_engine_log,country,BR,725
+raw_payment_engine_log,country,GB,708
+raw_payment_engine_log,country,MX,403
+raw_payment_engine_log,country,NL,366
+raw_payment_engine_log,country,ES,273
+raw_payment_engine_log,country,IT,186
+raw_payment_engine_log,country,CL,154
+raw_payment_engine_log,country,CO,131
+raw_payment_engine_log,country,AR,112
+raw_payment_engine_log,currency,EUR,2914
+raw_payment_engine_log,currency,USD,2841
+raw_payment_engine_log,currency,BRL,725
+raw_payment_engine_log,currency,GBP,708
+raw_payment_engine_log,currency,MXN,403
+raw_payment_engine_log,currency,CLP,154
+raw_payment_engine_log,currency,COP,131
+raw_payment_engine_log,currency,ARS,112
+raw_payment_engine_log,operation_type,SALE,7813
+raw_payment_engine_log,operation_type,REFUND,173
+raw_payment_engine_log,operation_type,CHARGEBACK,2
+raw_payment_engine_log,psp,paypal_us,2166
+raw_payment_engine_log,psp,paypal_eu,1891
+raw_payment_engine_log,psp,adyen,1792
+raw_payment_engine_log,psp,dlocal,1319
+raw_payment_engine_log,psp,google_play,820
+raw_payment_engine_log,sku,sub_monthly,4476
+raw_payment_engine_log,sku,sub_quarterly,1567
+raw_payment_engine_log,sku,sub_annual,1166
+raw_payment_engine_log,sku,coach_addon,779
+raw_payment_engine_log,status,settled,7425
+raw_payment_engine_log,status,declined,562
+raw_payment_engine_log,status,pending,1
+raw_paypal_eu_activity,Currency,EUR,1587
+raw_paypal_eu_activity,Currency,GBP,306
+raw_paypal_eu_activity,Status,Completed,1704
+raw_paypal_eu_activity,Status,Denied,147
+raw_paypal_eu_activity,Status,Refunded,41
+raw_paypal_eu_activity,Status,Reversed,1
+raw_paypal_eu_activity,Type,Website Payment,1851
+raw_paypal_eu_activity,Type,Refund,41
+raw_paypal_eu_activity,Type,Payment Reversal,1
+raw_paypal_us_activity,Currency,USD,2167
+raw_paypal_us_activity,Status,Completed,1942
+raw_paypal_us_activity,Status,Denied,168
+raw_paypal_us_activity,Status,Refunded,57
+raw_paypal_us_activity,Type,Website Payment,2110
+raw_paypal_us_activity,Type,Refund,57
